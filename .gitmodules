@@ -1,0 +1,3 @@
+[submodule "macos"]
+	path = macos
+	url = https://github.com/The-Veil-Foundation/veil-macos.git

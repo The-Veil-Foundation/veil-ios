@@ -64,13 +64,13 @@
 		AA00000000000000000043 /* Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = Models;
-			path = ../Sources/XrayClient/Models;
+			path = macos/Sources/XrayClient/Models;
 			sourceTree = "<group>";
 		};
 		AA00000000000000000044 /* Core */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			name = Core;
-			path = ../Sources/XrayClient/Core;
+			path = macos/Sources/XrayClient/Core;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */

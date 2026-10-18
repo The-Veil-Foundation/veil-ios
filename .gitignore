@@ -1,0 +1,13 @@
+# The Xray-core xcframework is built locally (Scripts/build-xraycore.sh),
+# never committed.
+Frameworks/
+build/
+
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+*.xcuserdatad/
+xcuserdata/
+*.xcworkspace
