@@ -1,21 +1,109 @@
-# Veil for iOS
+<p align="center">
+  <img src=".github/assets/logo.png" width="128" height="128" alt="Veil">
+</p>
 
-iPhone and iPad client of [Veil](https://github.com/The-Veil-Foundation/veil-macos).
-It shares its model and core layer with the macOS app through the `macos`
-submodule, so parsers, config builder, subscriptions, routing and
-localization behave identically.
+<h1 align="center">Veil for iOS</h1>
 
-```bash
-git clone --recurse-submodules https://github.com/The-Veil-Foundation/veil-ios.git
-```
+<p align="center">
+  A fast, native VPN client for iPhone and iPad.<br>
+  Free and open source.
+</p>
 
-The iOS app is a real VPN, not a proxy: it uses Apple's **NetworkExtension**
-(`NEPacketTunnelProvider`) so every app on the device is tunnelled — Telegram,
-Safari, games, UDP, background traffic.
+<p align="center">
+  <a href="https://faustyu1.github.io/veil/">Website</a> ·
+  <a href="https://github.com/The-Veil-Foundation/veil-macos">macOS</a> ·
+  <a href="https://github.com/The-Veil-Foundation/veil-android">Android</a> ·
+  <a href="https://github.com/The-Veil-Foundation/veil-ios/issues">Issues</a> ·
+  <a href="#support-the-ios-build">Support</a>
+</p>
 
-It ships **one** core: Xray. No tun2socks, no sing-box, no second binary.
+<p align="center">
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License: AGPL v3"></a>
+  <a href="https://github.com/The-Veil-Foundation/veil-ios/actions/workflows/ios.yml"><img src="https://img.shields.io/github/actions/workflow/status/The-Veil-Foundation/veil-ios/ios.yml?branch=main&label=build" alt="Build"></a>
+  <img src="https://img.shields.io/badge/iOS-17%2B-black?logo=apple&logoColor=white" alt="iOS 17+">
+  <img src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" alt="Swift 6">
+  <img src="https://img.shields.io/badge/core-Xray-orange" alt="Core: Xray">
+  <img src="https://img.shields.io/badge/build-from_source-lightgrey" alt="Build from source">
+</p>
 
-## How the packet path works
+---
+
+Veil for iOS is the iPhone and iPad client of [Veil](https://github.com/The-Veil-Foundation/veil-macos).
+It is a real VPN, not a proxy: Apple's **NetworkExtension** (`NEPacketTunnelProvider`) tunnels
+every app on the device — Telegram, Safari, games, UDP, background traffic. It ships **one** core,
+[Xray-core](https://github.com/XTLS/Xray-core): no tun2socks, no sing-box, no second binary.
+
+The model and core layer are shared with the macOS app through the `macos` submodule, so parsers,
+config builder, subscriptions, routing and localization behave identically on both.
+
+> **No downloadable build yet.** The tunnel needs an entitlement Apple only grants to paid
+> developer accounts — see [Support the iOS build](#support-the-ios-build). Anyone with a paid
+> account can [build it from source](#build-from-source).
+
+> **Disclaimer.** Veil is a client for proxy protocols intended for privacy, development, and
+> lawful circumvention of censorship. You are responsible for complying with the laws and terms
+> of service that apply to you. The bundled core is third-party software under its own licence.
+
+## Features
+
+### Protocols
+
+| Supported | Not supported on iOS |
+| --- | --- |
+| VLESS (Reality, TLS, XTLS Vision, post-quantum encryption) | Hysteria2 |
+| VMess | TUIC |
+| Trojan | AnyTLS |
+| Shadowsocks | |
+| WireGuard (Xray's native outbound) | |
+
+Transports: `tcp`, `ws`, `grpc`, `http`, `xhttp`, `kcp`. The unsupported three need sing-box,
+which the iOS build deliberately does not ship — they are imported but greyed out
+(`ProxyConfig.xraySupported`).
+
+### One place to add servers
+
+Paste, scan a QR or pick a photo — `AddInputClassifier`
+(`macos/Sources/XrayClient/Core/AddInput.swift`) recognises:
+
+- share links, one per line (`vless://`, `vmess://`, `trojan://`, `ss://`, `wireguard://` …),
+  with balancer members folded together;
+- a wg-quick `[Interface]` profile pasted whole;
+- a subscription URL, plain or base64-wrapped;
+- a base64 subscription *body* pasted instead of the address.
+
+The sheet shows what it recognised before you commit and stays disabled for anything it cannot place.
+
+### The full desktop feature set
+
+- **Server list** — subscription sections with panel notes, traffic and expiry; grouping by
+  source / country / protocol; tag and protocol filters, sort by ping, pins, custom names and tags.
+- **Sources** — what each subscription returned, what was skipped and why, the groups the panel
+  declared, and a node inspector showing each server as Xray JSON or a share link.
+- **Groups** — fastest-node (`urltest`) and manual (`selector`) groups, your own or the panel's.
+- **Routing** — presets, custom rules to proxy / direct / block / a server / a group, community
+  rule lists and the geo rule database.
+- **DNS** — servers, detours, fake IP and DNS rules.
+- **Settings** — appearance, list options, startup, subscription refresh and User-Agent, device
+  ID, VPN profile and a redacted diagnostics report.
+- **Apply now** — routing, DNS, group or tunnel changes reload the core in place without dropping
+  the tunnel.
+- **Instant switching** — a new server is a core reload over the same utun; iOS never sees the
+  VPN drop.
+
+<details>
+<summary>What Xray cannot do</summary>
+
+These are left out of the generated config instead of failing it:
+
+- per-app (process) rules, inverted rules, remote rule sets and clash-mode rules;
+- DNS-over-TLS servers (DoH, DoH3, QUIC and plain UDP/TCP all work);
+- `geosite:` / `geoip:` matchers while the rule database is not downloaded.
+
+A rule whose matchers are all dropped is removed whole, so it never widens into a catch-all.
+
+</details>
+
+## How it works
 
 ```
 apps ──► iOS routing table ──► utun (created by NetworkExtension)
@@ -30,167 +118,31 @@ apps ──► iOS routing table ──► utun (created by NetworkExtension)
                               server
 ```
 
-Xray-core has had a native layer-3 `tun` inbound since v26 (`proxy/tun`), with an
-explicit iOS mode: if the `xray.tun.fd` environment flag is set, it adopts that
-descriptor instead of opening an interface itself. That is exactly what the
-tunnel provider does:
+Xray-core has a native layer-3 `tun` inbound (`proxy/tun`, v26+) with an iOS mode: when the
+`xray.tun.fd` flag is set, it adopts that descriptor instead of opening an interface itself.
 
-1. `NEPacketTunnelProvider.startTunnel` applies the network settings, which is
-   when iOS actually materialises the utun interface.
-2. It finds the interface's descriptor — there is no API for this, but the utun
-   socket is the only one in the process that answers
-   `getsockopt(SYSPROTO_CONTROL, UTUN_OPT_IFNAME)`.
-3. `XrayStart(config, fd, …)` publishes the descriptor via `os.Setenv` and boots
-   the core.
+1. `NEPacketTunnelProvider.startTunnel` applies the network settings, which is when iOS
+   materialises the utun interface.
+2. It finds the interface's descriptor — there is no API for this, but the utun socket is the
+   only one in the process that answers `getsockopt(SYSPROTO_CONTROL, UTUN_OPT_IFNAME)`.
+3. `XrayStart(config, fd, …)` publishes the descriptor via `os.Setenv` and boots the core.
 
-So the packets never leave the extension process until Xray sends them to the
-server. There is no local SOCKS listener and nothing translating TUN to SOCKS.
+Packets never leave the extension process until Xray sends them to the server — no local SOCKS
+listener, nothing translating TUN to SOCKS.
 
-## Layout
+`XrayProfileBuilder` (`macos/Sources/XrayClient/Core/XrayProfileBuilder.swift`) turns the whole
+app state into one Xray config. Every referenced server becomes an outbound tagged `srv-<id>`; a
+fastest-node group becomes a `leastPing` balancer backed by the observatory; a manual group routes
+straight to its selected member, since Xray has no runtime selector.
 
-| Path | What it is |
-|---|---|
-| `Veil.xcodeproj` | App + extension targets |
-| `App/` | SwiftUI app (server list, settings, routing, QR) |
-| `Tunnel/` | `PacketTunnelProvider` — the whole VPN |
-| `Shared/` | App-group paths, app↔extension IPC, config writer |
-| `XrayBridge/` | Go package binding Xray-core for gomobile |
-| `Config/` | Entitlements + the extension's `Info.plist` |
-| `Scripts/` | Build scripts for the framework and the app |
-| `macos/` | Submodule: [veil-macos](https://github.com/The-Veil-Foundation/veil-macos). Its `Sources/XrayClient/Models` and `.../Core` are compiled into both iOS targets |
+<details>
+<summary>App ↔ extension</summary>
 
-The parsers, config builder, subscription fetcher, routing model, store, ping
-tester and localization are the *same files* the desktop app uses — platform
-differences are handled with `#if os(macOS)`, so there is one source of truth
-and `swift test` in `macos/` covers both. A change to shared code lands in
-veil-macos first; then bump the submodule here.
-
-## Adding servers
-
-There is one entry point, not a "link vs. subscription" choice. Whatever the
-user pastes, scans or picks from the photo library goes through
-`AddInputClassifier` (in `macos/Sources/XrayClient/Core/AddInput.swift`), which
-recognises:
-
-- share links, one per line (`vless://`, `vmess://`, `trojan://`, `ss://`,
-  `wireguard://` …) — balancer members are folded together before they land in
-  the store;
-- a wg-quick `[Interface]` profile pasted whole;
-- a subscription URL, plain or base64-wrapped the way some panels hand it out;
-- a base64 subscription *body*, for users who paste the payload instead of the
-  address.
-
-The sheet reports what it recognised before the user commits, and the confirm
-button stays disabled for anything it cannot place. The classifier lives in the
-shared Core layer and is covered by `AddInputTests`.
-
-## Protocols
-
-Everything Xray-core can do on its own:
-
-| Supported | Not supported on iOS |
-|---|---|
-| VLESS (Reality, TLS, XTLS Vision, post-quantum encryption) | Hysteria2 |
-| VMess | TUIC |
-| Trojan | AnyTLS |
-| Shadowsocks | |
-| WireGuard (Xray's native outbound) | |
-
-Transports: `tcp`, `ws`, `grpc`, `http`, `xhttp`, `kcp`.
-
-The three unsupported ones need the sing-box core, which the iOS build
-deliberately does not ship. They still appear in the server list (imported from
-subscriptions) but are greyed out and cannot be connected — see
-`ProxyConfig.xraySupported`.
-
-## Features shared with the desktop app
-
-The iOS app has the desktop feature set, rendered for one core:
-
-- **Server list** — subscription sections with panel notes, traffic and expiry,
-  grouping by source / country / protocol, tag and protocol filters, sort by
-  ping, pins, custom names and tags, arrange mode.
-- **Sources tab** — what each subscription returned, which entries were
-  skipped and why, the groups the panel declared, and a node inspector that
-  shows each server as Xray JSON or a share link. Manual nodes can be edited
-  and checked by the running core.
-- **Groups** — fastest-node (`urltest`) and manual (`selector`) groups, own or
-  declared by the panel, built from members or from a query over sources and
-  tags.
-- **Routing** — presets, custom rules that send traffic to proxy, direct,
-  block, a single server or a group, community rule lists, and the geo rule
-  database.
-- **DNS** — servers, detours, fake IP and DNS rules.
-- **Settings** — appearance, list options, startup, subscription refresh and
-  User-Agent, device ID, VPN profile and a redacted diagnostics report.
-
-`XrayProfileBuilder` (`macos/Sources/XrayClient/Core/XrayProfileBuilder.swift`) turns
-all of that into one Xray config. Every referenced server becomes an outbound
-tagged `srv-<id>`. A fastest-node group becomes a `leastPing` balancer backed by
-the observatory. A manual group routes straight to its selected member, since
-Xray has no runtime selector.
-
-Changing routing, DNS, groups or tunnel settings while connected shows **Apply
-now** on the status card. That reloads the core in place without dropping the
-tunnel.
-
-### What Xray cannot do
-
-These are left out of the generated config instead of failing it:
-
-- per-app (process) rules, inverted rules, remote rule sets and clash-mode rules;
-- DNS-over-TLS servers (DoH, DoH3, QUIC and plain UDP/TCP all work);
-- `geosite:` / `geoip:` matchers while the rule database is not downloaded.
-
-A rule whose matchers are all dropped is removed whole, so it never widens into
-a catch-all.
-
-## Building
-
-```bash
-# 1. Compile Xray-core for iOS (device + simulator). Takes a few minutes.
-Scripts/build-xraycore.sh
-
-# 2. Build the app
-Scripts/build-app.sh simulator Release
-Scripts/build-app.sh device   Release <YOUR_TEAM_ID>
-```
-
-If `macos/` is empty, run `git submodule update --init` first.
-
-`build-xraycore.sh` installs `gomobile` if missing and writes
-`Frameworks/XrayCore.xcframework` (gitignored — it is ~110 MB and
-reproducible from source). The framework is a **static** library, so it is
-linked into the extension and never embedded.
-
-To work in Xcode, open `Veil.xcodeproj` after step 1.
-
-## Signing and capabilities
-
-Running the tunnel on a real device needs a paid Apple Developer account —
-there is no way around it, and no re-signing tool can substitute for it. See
-[Why there is no iOS build to download yet](#why-there-is-no-ios-build-to-download-yet) below.
-
-The App ID for **both** the app and the extension must have:
-
-- **Network Extensions** → `packet-tunnel-provider`
-- **App Groups** → `group.dev.local.veil`
-
-Bundle identifiers are `dev.local.veil` and `dev.local.veil.tunnel`. If you
-change them, update `AppGroup.identifier` and
-`AppGroup.tunnelBundleIdentifier` in `Shared/AppGroup.swift` and both
-`.entitlements` files in `Config/` to match.
-
-The simulator builds without a team, but NetworkExtension does not run there —
-the simulator has no VPN stack. Use it for UI work only.
-
-## App ↔ extension
-
-They are separate processes, so everything goes through the shared app group
-container `group.dev.local.veil`:
+They are separate processes, so everything goes through the app group container
+`group.dev.local.veil`:
 
 | File | Written by | Read by |
-|---|---|---|
+| --- | --- | --- |
 | `store.json` | app | app |
 | `xray-config.json` | app | extension |
 | `session.json` | app | extension |
@@ -199,49 +151,76 @@ container `group.dev.local.veil`:
 | `geo/*.dat` | app | Xray |
 
 Live state (traffic counters, balancer health, core version) is pulled with
-`NETunnelProviderSession.sendProviderMessage` once a second while connected.
-The log tail rides along only while the log screen is open. A `check` message
-asks the running core to validate a node config, so the node editor reports the
-core's own error. Because the core lives in the extension, that check works only
-while connected.
+`NETunnelProviderSession.sendProviderMessage` once a second while connected. The log tail rides
+along only while the log screen is open. A `check` message asks the running core to validate a
+node config, so the node editor reports the core's own error — which works only while connected.
 
-Traffic counters sum every proxy outbound, so a group's members all count.
-Literal server IPs are added to the tunnel's `excludedRoutes`, which keeps pings
-on the real path rather than through the tunnel.
+Traffic counters sum every proxy outbound, so a group's members all count. Literal server IPs are
+added to the tunnel's `excludedRoutes`, keeping pings on the real path.
 
-When the routing preset bypasses the LAN (Bypass LAN, China, Russia), the
-private ranges (`10/8`, `172.16/12`, `192.168/16`, `169.254/16`, `fc00::/7`,
-`fe80::/10`) are excluded from the tunnel as well, so that traffic never enters
-the extension. Domain-based direct rules still go through Xray, because the OS
-can only exclude by address. A reload whose routes differ re-applies the network
-settings on the running tunnel and keeps the same utun.
+When the routing preset bypasses the LAN (Bypass LAN, China, Russia), the private ranges
+(`10/8`, `172.16/12`, `192.168/16`, `169.254/16`, `fc00::/7`, `fe80::/10`) are excluded from the
+tunnel too. Domain-based direct rules still go through Xray, because the OS can only exclude by
+address. A reload whose routes differ re-applies the network settings on the same utun.
 
-**Switching servers does not reconnect the VPN.** The app writes a new config
-and sends a `reload` message; the provider restarts only Xray, keeping the same
-utun descriptor. iOS never sees the tunnel drop, and the switch is sub-second —
-the same trick the desktop app uses with its transport.
+**Switching servers does not reconnect the VPN.** The app writes a new config and sends a
+`reload` message; the provider restarts only Xray, keeping the same utun descriptor.
 
-## Tunnel shape
+</details>
+
+<details>
+<summary>Tunnel shape and reconnects</summary>
 
 - IPv4 `198.18.0.1/24`, default route.
-- IPv6 `fd6e:a81b:704f:1211::1/64`, default route — **on by default**. If the
-  tunnel only claimed IPv4, IPv6-capable apps would route around it and leak.
-  Turn it off in Settings if your server has no IPv6.
-- DNS is claimed with `matchDomains = [""]`, so every query enters the tunnel.
-  Xray picks port-53 traffic off with a routing rule and answers it from its own
-  `dns` section, which resolves through the proxy.
+- IPv6 `fd6e:a81b:704f:1211::1/64`, default route — **on by default**, otherwise IPv6-capable
+  apps would route around the tunnel and leak. Turn it off in Settings if your server has no IPv6.
+- DNS is claimed with `matchDomains = [""]`, so every query enters the tunnel; Xray answers
+  port-53 traffic from its own `dns` section, resolving through the proxy.
 - MTU 1500 by default (adjustable 1280–1500).
-- The Go heap is capped at 48 MB with an aggressive GC. NetworkExtension
-  processes have a small memory budget and are killed outright when they exceed
-  it.
+- The Go heap is capped at 48 MB with an aggressive GC — NetworkExtension processes are killed
+  outright when they exceed their small memory budget.
 
-## Reconnect behaviour
+The provider watches `NWPathMonitor`. A Wi-Fi ↔ cellular handover invalidates Xray's sockets but
+not the utun, so it restarts only the core (debounced 1.5 s) while `reasserting` is set. `wake()`
+does the same after the device sleeps.
 
-The provider watches `NWPathMonitor`. A Wi-Fi ↔ cellular handover invalidates
-Xray's sockets but not the utun, so it just restarts the core (debounced 1.5 s)
-while `reasserting` is set. `wake()` does the same after the device sleeps.
+</details>
 
-## Verifying a generated config
+## Build from source
+
+```bash
+git clone --recurse-submodules https://github.com/The-Veil-Foundation/veil-ios.git && cd veil-ios
+
+Scripts/build-xraycore.sh                              # Xray-core for device + simulator
+Scripts/build-app.sh simulator Release
+Scripts/build-app.sh device    Release <YOUR_TEAM_ID>
+```
+
+> If `macos/` is empty, run `git submodule update --init` first.
+
+`build-xraycore.sh` installs `gomobile` if missing and writes `Frameworks/XrayCore.xcframework`
+(gitignored — ~110 MB, reproducible from source). It is a **static** library, linked into the
+extension and never embedded. To work in Xcode, open `Veil.xcodeproj` after the first step.
+
+The simulator builds without a team, but has no VPN stack — use it for UI work only.
+
+<details>
+<summary>Signing and capabilities</summary>
+
+Running the tunnel on a real device needs a paid Apple Developer account. The App ID for **both**
+the app and the extension must have:
+
+- **Network Extensions** → `packet-tunnel-provider`
+- **App Groups** → `group.dev.local.veil`
+
+Bundle identifiers are `dev.local.veil` and `dev.local.veil.tunnel`. If you change them, update
+`AppGroup.identifier` and `AppGroup.tunnelBundleIdentifier` in `Shared/AppGroup.swift` and both
+`.entitlements` files in `Config/`.
+
+</details>
+
+<details>
+<summary>Verifying a generated config</summary>
 
 The config the app writes is ordinary Xray JSON, so a desktop core can check it:
 
@@ -249,36 +228,72 @@ The config the app writes is ordinary Xray JSON, so a desktop core can check it:
 XRAY_TUN_FD=1 ./xray run -test -config xray-config.json
 ```
 
-Without `XRAY_TUN_FD` the desktop core tries to create the interface itself and
-fails on permissions — that is expected, and unrelated to the config.
+Without `XRAY_TUN_FD` the desktop core tries to create the interface itself and fails on
+permissions — expected, and unrelated to the config.
 
-## Why there is no iOS build to download yet
+</details>
 
-The tunnel needs the `packet-tunnel-provider` Network Extension entitlement. Apple only issues
-that entitlement through a **paid Apple Developer Program membership** ($99/year) — a free
-personal team cannot provision it.
+## Project layout
 
-**Please don't try to sign the app with an ordinary certificate.** It will not work, and the
-failure is confusing rather than obvious:
+| Path | What it is |
+| --- | --- |
+| `Veil.xcodeproj` | App + extension targets |
+| `App/` | SwiftUI app (server list, settings, routing, QR) |
+| `Tunnel/` | `PacketTunnelProvider` — the whole VPN |
+| `Shared/` | App-group paths, app ↔ extension IPC, config writer |
+| `XrayBridge/` | Go package binding Xray-core for gomobile |
+| `Config/` | Entitlements and the extension's `Info.plist` |
+| `Scripts/` | Build scripts for the framework and the app |
+| `macos/` | Submodule: [veil-macos](https://github.com/The-Veil-Foundation/veil-macos) — its `Sources/XrayClient/Models` and `Core` compile into both targets |
 
-- Sign it with a free personal team and signing fails outright — the entitlement is rejected,
-  because entitlements have to be authorised by a provisioning profile Apple issued.
-- Strip the entitlement to make it build and the app installs and launches fine, but the VPN
-  never starts: `NETunnelProviderManager` refuses the configuration, and you get an error with
-  no obvious cause.
+Parsers, config builder, subscription fetcher, routing model, store, ping tester and localization
+are the *same files* the desktop app uses, with `#if os(macOS)` for platform differences — one
+source of truth, and `swift test` in `macos/` covers both. Shared changes land in veil-macos
+first, then the submodule is bumped here.
 
-Re-signing tools that rely on free accounts (AltStore, Sideloadly and friends) hit the same
-wall, for the same reason — none of them can grant an entitlement Apple has not issued.
+## Support the iOS build
 
-So the app is buildable from source by anyone who already has a paid account, but there is no
-signed build to hand out until the membership is funded. If you'd like to help:
+The tunnel needs the `packet-tunnel-provider` Network Extension entitlement, which Apple only
+issues through a **paid Apple Developer Program membership** ($99/year).
+
+**Please don't try to sign the app with an ordinary certificate** — it fails in confusing ways:
+
+- With a free personal team, signing fails outright: the entitlement is rejected without a
+  provisioning profile Apple issued.
+- Strip the entitlement and the app installs and launches, but the VPN never starts —
+  `NETunnelProviderManager` refuses the configuration with no obvious cause.
+- AltStore, Sideloadly and other free-account re-signing tools hit the same wall.
+
+So the app builds from source for anyone who already has a paid account, but there is no signed
+build to hand out until the membership is funded. If you'd like to help:
 
 - **TON** — `UQDsbwQEaspICRDSW4oSNmL0PXxDlnfkiMuqoUbK7ufiCVXj`
 - **RUB** — [CloudTips](https://pay.cloudtips.ru/p/a207bf02)
 
-Nothing in the app is paywalled and none of this changes the licence — it stays AGPLv3 either
-way. The membership only buys the ability to ship a build that iOS will actually run.
+Nothing in the app is paywalled and none of this changes the licence.
+
+## Other platforms
+
+- **macOS** — [veil-macos](https://github.com/The-Veil-Foundation/veil-macos)
+- **Android / Android TV** — [veil-android](https://github.com/The-Veil-Foundation/veil-android)
+
+## Acknowledgements
+
+- [XTLS/Xray-core](https://github.com/XTLS/Xray-core) — proxy engine
+- [golang/mobile](https://github.com/golang/mobile) — gomobile bindings
+
+## Star History
+
+<a href="https://star-history.com/#The-Veil-Foundation/veil-ios&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=The-Veil-Foundation/veil-ios&type=Date&theme=dark">
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=The-Veil-Foundation/veil-ios&type=Date">
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=The-Veil-Foundation/veil-ios&type=Date">
+  </picture>
+</a>
 
 ## License
 
-AGPLv3, same as the macOS app.
+Veil for iOS is free software, licensed under the **GNU Affero General Public License v3.0** —
+see [LICENSE](LICENSE), same as the macOS app. [Xray-core](https://github.com/XTLS/Xray-core)
+remains under its own licence (MPL-2.0).
