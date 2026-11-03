@@ -5,5 +5,6 @@ split are in the [veil-macos changelog](https://github.com/The-Veil-Foundation/v
 
 ## [Unreleased]
 
+- New app icon: the split Veil shield on graphite.
 - The iOS app moved out of veil-macos into its own repository, with its
   history. Shared code now comes from the `macos` submodule.
