@@ -348,7 +348,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				MARKETING_VERSION = 1.11.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.local.veil;
+				PRODUCT_BUNDLE_IDENTIFIER = org.veil.app;
 				PRODUCT_NAME = Veil;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -371,7 +371,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				MARKETING_VERSION = 1.11.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.local.veil;
+				PRODUCT_BUNDLE_IDENTIFIER = org.veil.app;
 				PRODUCT_NAME = Veil;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -388,7 +388,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Veil Tunnel";
 				MARKETING_VERSION = 1.11.0;
 				OTHER_LDFLAGS = "-lresolv";
-				PRODUCT_BUNDLE_IDENTIFIER = dev.local.veil.tunnel;
+				PRODUCT_BUNDLE_IDENTIFIER = org.veil.app.tunnel;
 				PRODUCT_NAME = VeilTunnel;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -406,7 +406,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Veil Tunnel";
 				MARKETING_VERSION = 1.11.0;
 				OTHER_LDFLAGS = "-lresolv";
-				PRODUCT_BUNDLE_IDENTIFIER = dev.local.veil.tunnel;
+				PRODUCT_BUNDLE_IDENTIFIER = org.veil.app.tunnel;
 				PRODUCT_NAME = VeilTunnel;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

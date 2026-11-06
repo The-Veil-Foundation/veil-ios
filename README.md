@@ -139,7 +139,7 @@ straight to its selected member, since Xray has no runtime selector.
 <summary>App ↔ extension</summary>
 
 They are separate processes, so everything goes through the app group container
-`group.dev.local.veil`:
+`group.org.veil.app`:
 
 | File | Written by | Read by |
 | --- | --- | --- |
@@ -211,9 +211,9 @@ Running the tunnel on a real device needs a paid Apple Developer account. The Ap
 the app and the extension must have:
 
 - **Network Extensions** → `packet-tunnel-provider`
-- **App Groups** → `group.dev.local.veil`
+- **App Groups** → `group.org.veil.app`
 
-Bundle identifiers are `dev.local.veil` and `dev.local.veil.tunnel`. If you change them, update
+Bundle identifiers are `org.veil.app` and `org.veil.app.tunnel`. If you change them, update
 `AppGroup.identifier` and `AppGroup.tunnelBundleIdentifier` in `Shared/AppGroup.swift` and both
 `.entitlements` files in `Config/`.
 
