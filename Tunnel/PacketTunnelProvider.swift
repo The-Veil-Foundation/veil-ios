@@ -18,8 +18,8 @@ import XrayCore
 /// `Locked` must already be running on it.
 final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
 
-    private let log = Logger(subsystem: "dev.local.veil", category: "tunnel")
-    private let stateQueue = DispatchQueue(label: "dev.local.veil.tunnel.state")
+    private let log = Logger(subsystem: "org.veil.app", category: "tunnel")
+    private let stateQueue = DispatchQueue(label: "org.veil.app.tunnel.state")
 
     private var session = TunnelSession()
     private var startedAt: Date?

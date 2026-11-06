@@ -8,10 +8,10 @@ import Foundation
 enum AppGroup {
 
     /// Must match the App Groups entitlement on both targets.
-    static let identifier = "group.dev.local.veil"
+    static let identifier = "group.org.veil.app"
 
     /// Bundle identifier of the packet tunnel provider extension.
-    static let tunnelBundleIdentifier = "dev.local.veil.tunnel"
+    static let tunnelBundleIdentifier = "org.veil.app.tunnel"
 
     /// Root of the shared container. Falls back to the process-local caches
     /// directory when the app group is unavailable (unsigned local builds), so
